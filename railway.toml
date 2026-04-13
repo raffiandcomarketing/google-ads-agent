@@ -3,4 +3,5 @@ builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-cronSchedule = "0 10 * * *"
+# Runs every day at 7 AM Pacific (2 PM UTC)
+cronSchedule = "0 14 * * *"
