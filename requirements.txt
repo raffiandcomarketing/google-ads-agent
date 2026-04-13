@@ -1,0 +1,3 @@
+anthropic>=0.40.0
+google-ads>=25.0.0
+supabase>=2.0.0
