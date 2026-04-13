@@ -175,7 +175,6 @@ def fetch_keyword_data(client: GoogleAdsClient) -> list[dict]:
 
     return keywords
 
-
 # âââ Claude: Analyze & Recommend âââââââââââââââââââââââââââââââââ
 def analyze_with_claude(campaigns: list[dict], keywords: list[dict]) -> dict:
     """Send performance data to Claude for optimization analysis."""
@@ -291,7 +290,6 @@ Respond in JSON with this structure:
         print(f"Response text (first 500 chars): {response_text[:500]}", file=sys.stderr, flush=True)
         raise
 
-
 # âââ Supabase: Store Results âââââââââââââââââââââââââââââââââââââ
 def store_results(supabase: Client, analysis: dict, campaigns: list[dict], keywords: list[dict]):
     """Save the analysis and raw data to Supabase."""
@@ -365,6 +363,7 @@ def main():
 
     try:
         print("-> Fetching keyword data...")
+        keywords = fetch_keyword_data(google_client)
         print(f"  Found {len(keywords)} keywords with impressions")
         log_step("fetch_keywords", f"Found {len(keywords)} keywords")
     except Exception as e:
@@ -414,38 +413,3 @@ if __name__ == "__main__":
         traceback.print_exc(file=sys.stderr)
         print(f"{'='*60}", file=sys.stderr, flush=True)
         sys.exit(1)
-        keywords = fetch_keyword_data(google_client)
-Pulls campaign data from Google Ads, analyzes with Claude,
-stores recommendations in Supabase.
-
-Deploy on Railway with a cron schedule.
-"""
-
-import os
-import json
-import sys
-import traceback
-from datetime import datetime, timedelta
-
-import anthropic
-from google.ads.googleads.client import GoogleAdsClient
-from supabase import create_client, Client
-
-# ─── Config ───────────────────────────────────────────────────────
-ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
-SUPABASE_URL = os.environ["SUPABASE_URL"]
-SUPABASE_KEY = os.environ["SUPABASE_KEY"]
-
-# Google Ads credentials (all from env vars)
-GOOGLE_ADS_CONFIG = {
-    "developer_token": os.environ["GOOGLE_ADS_DEVELOPER_TOKEN"],
-    "client_id": os.environ["GOOGLE_ADS_CLIENT_ID"],
-    "client_secret": os.environ["GOOGLE_ADS_CLIENT_SECRET"],
-    "refresh_token": os.environ["GOOGLE_ADS_REFRESH_TOKEN"],
-    "login_customer_id": os.environ.get("GOOGLE_ADS_LOGIN_CUSTOMER_ID"),
-    "use_proto_plus": True,
-}
-
-CUSTOMER_ID = os.environ["GOOGLE_ADS_CUSTOMER_ID"]
-
-
