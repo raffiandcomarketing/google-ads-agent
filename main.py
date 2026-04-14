@@ -48,6 +48,11 @@ EMAIL_TO = os.environ.get("EMAIL_TO", "al@raffiandco.com")
 # Spend guardrail — total daily budget must not exceed this
 MAX_DAILY_SPEND = float(os.environ.get("MAX_DAILY_SPEND", "2500"))
 
+# Blocked brands — never bid on, reference, or recommend these in any context
+BLOCKED_BRANDS = [b.strip().lower() for b in os.environ.get(
+    "BLOCKED_BRANDS", "rolex"
+).split(",") if b.strip()]
+
 # How many days of data to analyze
 LOOKBACK_DAYS = int(os.environ.get("LOOKBACK_DAYS", "7"))
 
@@ -222,6 +227,13 @@ specific, actionable optimization recommendations.
 ## Top Keywords by Spend
 {json.dumps(top_keywords, indent=2)}
 
+## HARD CONSTRAINT — BLOCKED BRANDS
+The following brands are STRICTLY BLOCKED. Do NOT recommend bidding on, targeting,
+mentioning, or using any of these brands as keywords, negative keywords, ad copy,
+or in any recommendation whatsoever: {', '.join(BLOCKED_BRANDS)}
+If any existing keywords or campaigns reference a blocked brand, flag them as URGENT
+actions to pause immediately.
+
 ## HARD CONSTRAINT — DAILY SPEND CAP
 The TOTAL daily budget across ALL campaigns must NEVER exceed ${MAX_DAILY_SPEND:,.0f}.
 If your budget recommendations would push total daily spend above this limit, scale them
@@ -359,6 +371,67 @@ def enforce_spend_guardrail(analysis: dict, campaigns: list[dict]) -> dict:
     else:
         print(f"  Guardrail OK: suggested total ${total_suggested:,.2f}/day within ${MAX_DAILY_SPEND:,.0f} cap", flush=True)
         log_step("guardrail_ok", f"Suggested total ${total_suggested:,.2f}/day within ${MAX_DAILY_SPEND:,.0f} cap")
+
+    return analysis
+
+
+# ─── Guardrail: Enforce Blocked Brands ─────────────────────────────
+def enforce_brand_guardrail(analysis: dict) -> dict:
+    """Remove any recommendations that reference blocked brands and flag violations."""
+    if not BLOCKED_BRANDS:
+        return analysis
+
+    violations = []
+
+    def _contains_blocked(text: str) -> str | None:
+        """Return the blocked brand name if found in text, else None."""
+        if not text:
+            return None
+        lower = text.lower()
+        for brand in BLOCKED_BRANDS:
+            if brand in lower:
+                return brand
+        return None
+
+    # Filter keyword_actions
+    clean_kw = []
+    for k in analysis.get("keyword_actions", []):
+        brand = _contains_blocked(k.get("keyword", "")) or _contains_blocked(k.get("reason", ""))
+        if brand:
+            violations.append(f"Removed keyword action referencing '{brand}': {k.get('keyword', '')}")
+        else:
+            clean_kw.append(k)
+    analysis["keyword_actions"] = clean_kw
+
+    # Filter bid_optimizations
+    clean_bids = []
+    for b in analysis.get("bid_optimizations", []):
+        brand = _contains_blocked(b.get("keyword", "")) or _contains_blocked(b.get("suggested_action", ""))
+        if brand:
+            violations.append(f"Removed bid optimization referencing '{brand}': {b.get('keyword', '')}")
+        else:
+            clean_bids.append(b)
+    analysis["bid_optimizations"] = clean_bids
+
+    # Filter testing_ideas
+    clean_tests = []
+    for t in analysis.get("testing_ideas", []):
+        brand = _contains_blocked(t.get("idea", ""))
+        if brand:
+            violations.append(f"Removed testing idea referencing '{brand}'")
+        else:
+            clean_tests.append(t)
+    analysis["testing_ideas"] = clean_tests
+
+    if violations:
+        analysis["summary"] = f"⛔ {len(violations)} recommendation(s) referencing blocked brands were removed. " + analysis.get("summary", "")
+        print(f"  BRAND GUARDRAIL: Removed {len(violations)} items referencing blocked brands", flush=True)
+        for v in violations:
+            print(f"    - {v}", flush=True)
+        log_step("brand_guardrail", f"Removed {len(violations)} blocked brand references: {'; '.join(violations)}")
+    else:
+        print(f"  Brand guardrail OK: no blocked brand references found", flush=True)
+        log_step("brand_guardrail_ok", "No blocked brand references found")
 
     return analysis
 
@@ -620,6 +693,15 @@ def main():
         log_step("guardrail", error=f"{type(e).__name__}: {e}")
         print(f"  WARNING: Guardrail check failed: {e}", flush=True)
         # Don't raise — still store results even if guardrail check errors
+
+    # 4b. Enforce brand guardrail
+    try:
+        blocked_str = ", ".join(BLOCKED_BRANDS) if BLOCKED_BRANDS else "(none)"
+        print(f"-> Enforcing brand guardrail (blocked: {blocked_str})...")
+        analysis = enforce_brand_guardrail(analysis)
+    except Exception as e:
+        log_step("brand_guardrail", error=f"{type(e).__name__}: {e}")
+        print(f"  WARNING: Brand guardrail check failed: {e}", flush=True)
 
     # 5. Store results
     try:
