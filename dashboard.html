@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Ads Agent — Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --navy-900: #0f1a2e;
+            --navy-800: #162240;
+            --navy-700: #1d2d54;
+            --navy-600: #253a68;
+            --navy-500: #3454a0;
+            --navy-400: #4a6ec5;
+            --navy-300: #7b9de8;
+            --navy-200: #b3ccf5;
+            --navy-100: #dce8fa;
+            --navy-50: #eef3fc;
+
+            --bg: #f5f7fb;
+            --bg-card: #ffffff;
+            --bg-subtle: #f0f3f9;
+            --text-primary: #0f1a2e;
+            --text-secondary: #4a5568;
+            --text-muted: #8896ab;
+            --border: #e2e8f0;
+            --border-light: #edf2f7;
+
+            --green: #16a34a;
+            --green-bg: #ecfdf5;
+            --red: #dc2626;
+            --red-bg: #fef2f2;
+            --yellow: #d97706;
+            --yellow-bg: #fffbeb;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        /* Top nav bar */
+        .topbar {
+            background: var(--navy-900);
+            padding: 0 32px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 1px 3px rgba(15,26,46,0.12);
+        }
+        .topbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .topbar-logo {
+            width: 32px; height: 32px;
+            background: linear-gradient(135deg, var(--navy-400), var(--navy-300));
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 800; color: #fff; font-size: 14px;
+        }
+        .topbar-title {
+            font-size: 15px; font-weight: 600; color: #fff; letter-spacing: -0.2px;
+        }
+        .topbar-right {
+            display: flex; align-items: center; gap: 16px;
+        }
+        .topbar-status {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 13px; color: var(--navy-200);
+        }
+        .status-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: #22c55e;
+            box-shadow: 0 0 6px rgba(34,197,94,0.5);
+        }
+        .topbar-refresh {
+            background: var(--navy-700);
+            border: 1px solid var(--navy-600);
+            color: var(--navy-200);
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: inherit;
+        }
+        .topbar-refresh:hover {
+            background: var(--navy-600);
+            color: #fff;
+        }
+
+        .container { max-width: 1140px; margin: 0 auto; padding: 28px 24px; }
+
+        /* Score hero */
+        .score-hero {
+            display: grid;
+            grid-template-columns: 180px 1fr;
+            gap: 32px;
+            margin-bottom: 24px;
+            padding: 32px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: 0 1px 3px rgba(15,26,46,0.06);
+        }
+        .score-ring-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .score-ring {
+            width: 140px; height: 140px; position: relative;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .score-ring svg { position: absolute; transform: rotate(-90deg); }
+        .score-ring .number {
+            font-size: 52px; font-weight: 800; color: var(--navy-900);
+            line-height: 1;
+        }
+        .score-ring .label {
+            font-size: 10px; font-weight: 600; color: var(--text-muted);
+            position: absolute; bottom: 14px; letter-spacing: 1.5px;
+        }
+        .summary-block {
+            display: flex; flex-direction: column; justify-content: center;
+        }
+        .summary-block h2 {
+            font-size: 18px; font-weight: 700; color: var(--navy-900);
+            margin-bottom: 8px;
+        }
+        .summary-text {
+            font-size: 15px; line-height: 1.7; color: var(--text-secondary);
+        }
+
+        /* Metric cards */
+        .metrics {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+            margin-bottom: 24px;
+        }
+        .metric-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 22px;
+            box-shadow: 0 1px 3px rgba(15,26,46,0.04);
+            transition: box-shadow 0.15s;
+        }
+        .metric-card:hover {
+            box-shadow: 0 4px 12px rgba(15,26,46,0.08);
+        }
+        .metric-card .icon-row {
+            display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
+        }
+        .metric-icon {
+            width: 36px; height: 36px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px;
+        }
+        .metric-icon.spend { background: var(--navy-50); color: var(--navy-500); }
+        .metric-icon.conversions { background: var(--green-bg); color: var(--green); }
+        .metric-icon.roas { background: #f5f3ff; color: #7c3aed; }
+        .metric-icon.savings { background: var(--yellow-bg); color: var(--yellow); }
+        .metric-card .label {
+            font-size: 12px; font-weight: 500; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px;
+        }
+        .metric-card .value {
+            font-size: 28px; font-weight: 700; color: var(--navy-900);
+        }
+        .metric-card .sub {
+            font-size: 12px; font-weight: 500; color: var(--green); margin-top: 4px;
+        }
+        .metric-card .sub.negative { color: var(--red); }
+
+        /* Section panels */
+        .section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(15,26,46,0.04);
+        }
+        .section h2 {
+            font-size: 15px; font-weight: 700; margin-bottom: 16px;
+            display: flex; align-items: center; gap: 10px;
+            color: var(--navy-900);
+        }
+        .section h2 .icon {
+            width: 28px; height: 28px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px;
+        }
+        .section h2 .icon.urgent { background: var(--red-bg); }
+        .section h2 .icon.budget { background: var(--navy-50); }
+        .section h2 .icon.keywords { background: #f5f3ff; }
+        .section h2 .icon.bids { background: var(--green-bg); }
+        .section h2 .icon.tests { background: var(--yellow-bg); }
+        .section h2 .count {
+            background: var(--navy-50);
+            color: var(--navy-500);
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .action-list { list-style: none; }
+        .action-item {
+            display: flex; align-items: flex-start; gap: 12px;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--border-light);
+        }
+        .action-item:last-child { border-bottom: none; }
+        .impact-badge {
+            padding: 4px 10px; border-radius: 6px; font-size: 11px;
+            font-weight: 600; text-transform: uppercase; flex-shrink: 0; margin-top: 2px;
+        }
+        .impact-high { background: var(--red-bg); color: var(--red); }
+        .impact-medium { background: var(--yellow-bg); color: var(--yellow); }
+        .impact-low { background: var(--green-bg); color: var(--green); }
+        .action-content .title { font-size: 14px; font-weight: 500; color: var(--text-primary); margin-bottom: 3px; }
+        .action-content .detail { font-size: 12px; color: var(--text-muted); }
+
+        /* Budget table */
+        .budget-table { width: 100%; border-collapse: collapse; }
+        .budget-table th {
+            text-align: left; font-size: 11px; font-weight: 600; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.6px;
+            padding: 10px 12px; border-bottom: 2px solid var(--border);
+        }
+        .budget-table td {
+            padding: 14px 12px; border-bottom: 1px solid var(--border-light);
+            font-size: 14px; color: var(--text-primary);
+        }
+        .budget-table tr:hover { background: var(--bg-subtle); }
+        .change-positive { color: var(--green); font-weight: 600; }
+        .change-negative { color: var(--red); font-weight: 600; }
+
+        /* History */
+        .history-list { display: flex; gap: 8px; flex-wrap: wrap; }
+        .history-chip {
+            background: var(--bg-subtle);
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            padding: 10px 16px; font-size: 13px; cursor: pointer;
+            transition: all 0.15s;
+        }
+        .history-chip:hover { border-color: var(--navy-400); background: var(--navy-50); }
+        .history-chip.active { border-color: var(--navy-500); background: var(--navy-50); }
+        .history-chip .date { color: var(--text-secondary); }
+        .history-chip .score { color: var(--navy-900); font-weight: 700; margin-left: 8px; }
+
+        .loading { text-align: center; padding: 60px; color: var(--text-muted); font-size: 15px; }
+        .error { color: var(--red); background: var(--red-bg); padding: 16px; border-radius: 12px; }
+
+        .config-note {
+            background: var(--navy-50); border: 1px solid var(--navy-100); border-radius: 12px;
+            padding: 20px; margin-bottom: 24px; font-size: 14px; color: var(--text-secondary); line-height: 1.6;
+        }
+        .config-note code {
+            background: var(--navy-100); padding: 2px 8px; border-radius: 4px;
+            font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13px; color: var(--navy-600);
+        }
+
+        @media (max-width: 768px) {
+            .metrics { grid-template-columns: repeat(2, 1fr); }
+            .score-hero { grid-template-columns: 1fr; text-align: center; }
+            .summary-block { text-align: left; }
+        }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <div class="topbar-brand">
+            <div class="topbar-logo">GA</div>
+            <span class="topbar-title">Google Ads Agent</span>
+        </div>
+        <div class="topbar-right">
+            <div class="topbar-status">
+                <span class="status-dot"></span>
+                <span id="last-run">Loading...</span>
+            </div>
+            <button class="topbar-refresh" onclick="loadRuns()">Refresh</button>
+        </div>
+    </div>
+
+    <div class="container" id="app">
+        <div class="config-note" id="config-panel" style="display:none;"></div>
+
+        <div id="content">
+            <div class="loading">Connecting to Supabase...</div>
+        </div>
+
+        <div class="history-section" id="history-section" style="display:none;">
+            <div class="section">
+                <h2>
+                    <span class="icon tests">&#128197;</span>
+                    Run History
+                </h2>
+                <div class="history-list" id="history-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://wduzuyxveejyzobdjzjt.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkdXp1eXh2ZWVqeXpvYmRqemp0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjA3OTM5NCwiZXhwIjoyMDkxNjU1Mzk0fQ.DPu1lu8NaEI-I4JI1P2VOsQeiTu6kM-vdZGysN7kUh4';
+
+        async function supabaseQuery(table, params) {
+            const url = new URL(`${SUPABASE_URL}/rest/v1/${table}`);
+            if (params) Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, v));
+            const resp = await fetch(url, {
+                headers: {
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${await resp.text()}`);
+            return resp.json();
+        }
+
+        async function loadRuns() {
+            try {
+                const data = await supabaseQuery('optimization_runs', {
+                    select: '*',
+                    order: 'run_date.desc',
+                    limit: '10'
+                });
+
+                if (!data || data.length === 0) {
+                    document.getElementById('content').innerHTML =
+                        `<div class="loading">No optimization runs yet. The agent will populate data after its first run.</div>`;
+                    return;
+                }
+
+                document.getElementById('config-panel').style.display = 'none';
+                renderRun(data[0]);
+                renderHistory(data);
+            } catch (err) {
+                document.getElementById('content').innerHTML =
+                    `<div class="error">Error loading data: ${err.message}</div>`;
+            }
+        }
+
+        function renderRun(run) {
+            const score = run.health_score || 0;
+            const urgent = parseJSON(run.urgent_actions);
+            const budgets = parseJSON(run.budget_changes);
+            const keywords = parseJSON(run.keyword_actions);
+            const bids = parseJSON(run.bid_optimizations);
+            const tests = parseJSON(run.testing_ideas);
+
+            const scoreColor = score >= 7 ? '#16a34a' : score >= 4 ? '#d97706' : '#dc2626';
+            const bgRing = '#e2e8f0';
+            const circumference = 2 * Math.PI * 58;
+            const offset = circumference - (score / 10) * circumference;
+
+            const runDate = new Date(run.run_date);
+            document.getElementById('last-run').textContent = `Last run: ${runDate.toLocaleDateString()} ${runDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+
+            let html = `
+                <div class="score-hero">
+                    <div class="score-ring-wrap">
+                        <div class="score-ring">
+                            <svg width="140" height="140">
+                                <circle cx="70" cy="70" r="58" fill="none" stroke="${bgRing}" stroke-width="8"/>
+                                <circle cx="70" cy="70" r="58" fill="none" stroke="${scoreColor}" stroke-width="8"
+                                    stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"
+                                    stroke-linecap="round"/>
+                            </svg>
+                            <span class="number">${score}</span>
+                            <span class="label">HEALTH</span>
+                        </div>
+                    </div>
+                    <div class="summary-block">
+                        <h2>Campaign Summary</h2>
+                        <div class="summary-text">${run.summary || 'No summary available.'}</div>
+                    </div>
+                </div>
+
+                <div class="metrics">
+                    <div class="metric-card">
+                        <div class="icon-row">
+                            <div class="metric-icon spend">&#128176;</div>
+                        </div>
+                        <div class="label">Total Spend</div>
+                        <div class="value">$${formatNum(run.total_spend)}</div>
+                        <div class="sub">${run.lookback_days}-day period</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="icon-row">
+                            <div class="metric-icon conversions">&#9989;</div>
+                        </div>
+                        <div class="label">Conversions</div>
+                        <div class="value">${formatNum(run.total_conversions)}</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="icon-row">
+                            <div class="metric-icon roas">&#128200;</div>
+                        </div>
+                        <div class="label">ROAS</div>
+                        <div class="value">${run.roas || 0}x</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="icon-row">
+                            <div class="metric-icon savings">&#128178;</div>
+                        </div>
+                        <div class="label">Est. Monthly Savings</div>
+                        <div class="value">$${formatNum(run.estimated_monthly_savings)}</div>
+                        <div class="sub">potential</div>
+                    </div>
+                </div>
+            `;
+
+            if (urgent.length > 0) {
+                html += `<div class="section">
+                    <h2><span class="icon urgent">&#128308;</span> Urgent Actions <span class="count">${urgent.length}</span></h2>
+                    <ul class="action-list">
+                        ${urgent.map(a => `
+                            <li class="action-item">
+                                <span class="impact-badge impact-${(a.impact||'medium').toLowerCase()}">${a.impact || 'medium'}</span>
+                                <div class="action-content">
+                                    <div class="title">${a.action}</div>
+                                    <div class="detail">${a.campaign ? `Campaign: ${a.campaign}` : ''} ${a.details ? `— ${a.details}` : ''}</div>
+                                </div>
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>`;
+            }
+
+            if (budgets.length > 0) {
+                html += `<div class="section">
+                    <h2><span class="icon budget">&#128176;</span> Budget Reallocation <span class="count">${budgets.length}</span></h2>
+                    <table class="budget-table">
+                        <thead><tr><th>Campaign</th><th>Current</th><th>Suggested</th><th>Reason</th></tr></thead>
+                        <tbody>
+                            ${budgets.map(b => {
+                                const change = (b.suggested_budget || 0) - (b.current_budget || 0);
+                                const cls = change >= 0 ? 'change-positive' : 'change-negative';
+                                return `<tr>
+                                    <td style="font-weight:500">${b.campaign}</td>
+                                    <td>$${formatNum(b.current_budget)}</td>
+                                    <td class="${cls}">$${formatNum(b.suggested_budget)} (${change >= 0 ? '+' : ''}$${formatNum(change)})</td>
+                                    <td style="color:var(--text-muted);font-size:13px">${b.reason || ''}</td>
+                                </tr>`;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>`;
+            }
+
+            if (keywords.length > 0) {
+                html += `<div class="section">
+                    <h2><span class="icon keywords">&#128273;</span> Keyword Actions <span class="count">${keywords.length}</span></h2>
+                    <ul class="action-list">
+                        ${keywords.map(k => `
+                            <li class="action-item">
+                                <span class="impact-badge impact-medium">${k.action}</span>
+                                <div class="action-content">
+                                    <div class="title">"${k.keyword}"</div>
+                                    <div class="detail">${k.campaign ? `Campaign: ${k.campaign}` : ''} ${k.reason ? `— ${k.reason}` : ''}</div>
+                                </div>
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>`;
+            }
+
+            if (bids.length > 0) {
+                html += `<div class="section">
+                    <h2><span class="icon bids">&#128202;</span> Bid Optimizations <span class="count">${bids.length}</span></h2>
+                    <ul class="action-list">
+                        ${bids.map(b => `
+                            <li class="action-item">
+                                <div class="action-content">
+                                    <div class="title">"${b.keyword}" — ${b.suggested_action}</div>
+                                    <div class="detail">Campaign: ${b.campaign || '?'} · Current CPC: $${b.current_cpc || '?'}</div>
+                                </div>
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>`;
+            }
+
+            if (tests.length > 0) {
+                html += `<div class="section">
+                    <h2><span class="icon tests">&#129514;</span> Testing Ideas <span class="count">${tests.length}</span></h2>
+                    <ul class="action-list">
+                        ${tests.map(t => `
+                            <li class="action-item">
+                                <div class="action-content">
+                                    <div class="title">${t.idea}</div>
+                                    <div class="detail">${t.ad_group ? `Ad Group: ${t.ad_group}` : ''}</div>
+                                </div>
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>`;
+            }
+
+            document.getElementById('content').innerHTML = html;
+        }
+
+        function renderHistory(runs) {
+            if (runs.length <= 1) return;
+            document.getElementById('history-section').style.display = 'block';
+            const list = document.getElementById('history-list');
+            list.innerHTML = runs.map((r, i) => {
+                const d = new Date(r.run_date);
+                return `<div class="history-chip ${i === 0 ? 'active' : ''}" onclick="selectRun(${i})">
+                    <span class="date">${d.toLocaleDateString()}</span>
+                    <span class="score">${r.health_score}/10</span>
+                </div>`;
+            }).join('');
+            window._runs = runs;
+        }
+
+        function selectRun(index) {
+            document.querySelectorAll('.history-chip').forEach((el, i) => {
+                el.classList.toggle('active', i === index);
+            });
+            renderRun(window._runs[index]);
+        }
+
+        function parseJSON(val) {
+            if (!val) return [];
+            if (typeof val === 'string') { try { return JSON.parse(val); } catch { return []; } }
+            return Array.isArray(val) ? val : [];
+        }
+
+        function formatNum(n) {
+            if (n == null) return '0';
+            return Number(n).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+        }
+
+        loadRuns();
+    </script>
+</body>
+</html>
