@@ -97,6 +97,38 @@
             background: var(--navy-600);
             color: #fff;
         }
+        .topbar-run {
+            background: linear-gradient(135deg, #16a34a, #15803d);
+            border: none;
+            color: #fff;
+            padding: 6px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: inherit;
+        }
+        .topbar-run:hover {
+            background: linear-gradient(135deg, #15803d, #166534);
+            box-shadow: 0 0 12px rgba(22,163,74,0.4);
+        }
+        .topbar-run:disabled {
+            background: var(--navy-600);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        .topbar-run .spinner {
+            display: inline-block;
+            width: 12px; height: 12px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
         .container { max-width: 1140px; margin: 0 auto; padding: 28px 24px; }
 
@@ -291,6 +323,7 @@
                 <span id="last-run">Loading...</span>
             </div>
             <button class="topbar-refresh" onclick="loadRuns()">Refresh</button>
+            <button class="topbar-run" id="run-btn" onclick="runAgent()">&#9654; Run Report</button>
         </div>
     </div>
 
@@ -315,6 +348,43 @@
     <script>
         const SUPABASE_URL = 'https://wduzuyxveejyzobdjzjt.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkdXp1eXh2ZWVqeXpvYmRqemp0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjA3OTM5NCwiZXhwIjoyMDkxNjU1Mzk0fQ.DPu1lu8NaEI-I4JI1P2VOsQeiTu6kM-vdZGysN7kUh4';
+        const AGENT_URL = 'https://google-ads-agent-production.up.railway.app';
+
+        async function runAgent() {
+            const btn = document.getElementById('run-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Running...';
+            try {
+                const resp = await fetch(AGENT_URL + '/run', { method: 'POST' });
+                const data = await resp.json();
+                if (resp.status === 409) {
+                    alert('Agent is already running. Please wait for it to finish.');
+                } else if (resp.status === 202) {
+                    btn.innerHTML = '<span class="spinner"></span> Agent running...';
+                    // Poll for completion
+                    const poll = setInterval(async () => {
+                        try {
+                            const check = await fetch(AGENT_URL + '/');
+                            const st = await check.json();
+                            if (!st.running) {
+                                clearInterval(poll);
+                                btn.disabled = false;
+                                btn.innerHTML = '&#9654; Run Report';
+                                loadRuns();
+                            }
+                        } catch (e) { /* keep polling */ }
+                    }, 5000);
+                } else {
+                    alert('Unexpected response: ' + JSON.stringify(data));
+                    btn.disabled = false;
+                    btn.innerHTML = '&#9654; Run Report';
+                }
+            } catch (err) {
+                alert('Failed to reach agent: ' + err.message);
+                btn.disabled = false;
+                btn.innerHTML = '&#9654; Run Report';
+            }
+        }
 
         async function supabaseQuery(table, params) {
             const url = new URL(`${SUPABASE_URL}/rest/v1/${table}`);
