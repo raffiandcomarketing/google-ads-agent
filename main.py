@@ -1,10 +1,10 @@
 """
-Google Ads Overnight Optimization Agent
+Google Ads Optimization Agent
 ========================================
 Pulls campaign data from Google Ads, analyzes with Claude,
 stores recommendations in Supabase.
 
-Deploy on Railway with a cron schedule.
+Deploy on Railway as a web service. Trigger via POST /run.
 """
 
 import os
@@ -12,6 +12,8 @@ import json
 import sys
 import traceback
 import smtplib
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
@@ -729,12 +731,78 @@ def main():
     print(f"   Est. monthly revenue gain: ${analysis.get('estimated_monthly_revenue_gain', 0):,.2f}")
 
 
+# ─── HTTP Server (on-demand trigger) ─────────────────────────────
+_running = False
+_lock = threading.Lock()
+
+
+class AgentHandler(BaseHTTPRequestHandler):
+    """Minimal HTTP handler: POST /run triggers the agent, GET / is health check."""
+
+    def _cors_headers(self):
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self._cors_headers()
+        self.end_headers()
+
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self._cors_headers()
+        self.end_headers()
+        self.wfile.write(json.dumps({"status": "ok", "running": _running}).encode())
+
+    def do_POST(self):
+        global _running
+        if self.path != "/run":
+            self.send_response(404)
+            self._cors_headers()
+            self.end_headers()
+            self.wfile.write(json.dumps({"error": "Not found"}).encode())
+            return
+
+        with _lock:
+            if _running:
+                self.send_response(409)
+                self.send_header("Content-Type", "application/json")
+                self._cors_headers()
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": "Agent is already running"}).encode())
+                return
+            _running = True
+
+        # Respond immediately, run agent in background
+        self.send_response(202)
+        self.send_header("Content-Type", "application/json")
+        self._cors_headers()
+        self.end_headers()
+        self.wfile.write(json.dumps({"status": "started"}).encode())
+
+        def run_agent():
+            global _running
+            try:
+                main()
+            except Exception as e:
+                print(f"AGENT ERROR: {type(e).__name__}: {e}", file=sys.stderr, flush=True)
+                traceback.print_exc(file=sys.stderr)
+            finally:
+                with _lock:
+                    _running = False
+
+        threading.Thread(target=run_agent, daemon=True).start()
+
+    def log_message(self, format, *args):
+        print(f"[HTTP] {args[0]}", flush=True)
+
+
 if __name__ == "__main__":
-    try:
-        main()
-    except Exception as e:
-        print(f"\n{'='*60}", file=sys.stderr, flush=True)
-        print(f"FATAL ERROR: {type(e).__name__}: {e}", file=sys.stderr, flush=True)
-        traceback.print_exc(file=sys.stderr)
-        print(f"{'='*60}", file=sys.stderr, flush=True)
-        sys.exit(1)
+    port = int(os.environ.get("PORT", "8080"))
+    server = HTTPServer(("0.0.0.0", port), AgentHandler)
+    print(f"Agent HTTP server listening on port {port}", flush=True)
+    print("POST /run  — trigger analysis", flush=True)
+    print("GET  /     — health check", flush=True)
+    server.serve_forever()
