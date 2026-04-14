@@ -46,7 +46,7 @@ EMAIL_FROM = os.environ.get("EMAIL_FROM", SMTP_USER)
 EMAIL_TO = os.environ.get("EMAIL_TO", "al@raffiandco.com")
 
 # Spend guardrail — total daily budget must not exceed this
-MAX_DAILY_SPEND = float(os.environ.get("MAX_DAILY_SPEND", "3000"))
+MAX_DAILY_SPEND = float(os.environ.get("MAX_DAILY_SPEND", "2500"))
 
 # How many days of data to analyze
 LOOKBACK_DAYS = int(os.environ.get("LOOKBACK_DAYS", "7"))
